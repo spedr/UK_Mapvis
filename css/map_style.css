@@ -42,8 +42,9 @@ th, td {
 }
 
 .population{
-  margin:auto;
   width:62.5%;
+  margin: 300px 0 10px 0;
+  position: absolute;
 }
 
 .content {

@@ -1,7 +1,34 @@
 <!DOCTYPE html>
+<html>
+<head>
 <meta charset="utf-8">
 <link rel="stylesheet" type="text/css" href="css/map_style.css">
+<style>
+    #selectors select {
+      display: grid;
 
+    }
+    #selectors {
+      position: absolute;
+    }
+    .legenda {
+      transform: translate(10px,150px);
+    }
+
+    div.tooltip {
+          position: absolute;
+          text-align: center;
+          width: 80px;
+          height: 14px;
+          padding: 2px;
+          font: 12px sans-serif;
+          background: #fff;
+          border: 0px;
+          pointer-events: none;
+      }
+
+</style>
+</head>
 <body>
 <script src="https://d3js.org/d3.v3.min.js"></script>
 <script src="https://d3js.org/topojson.v1.min.js"></script>
@@ -9,8 +36,8 @@
 <script src="lib/d3-legend.js"></script>
 <script src="https://d3js.org/d3-format.v1.min.js"></script>
 <div id='selectors' class='center'>
-<select id="subject">
-    <option value="all_subjects" selected="selected">All subjects</option>
+<select id="subject" onchange="updateData()">
+    <option value="all_subjects" selected="selected">All courses</option>
     <option value="AAA">AAA</option>
     <option value="BBB">BBB</option>
     <option value="CCC">CCC</option>
@@ -19,12 +46,12 @@
     <option value="FFF">FFF</option>
     <option value="GGG">GGG</option>
 </select>
-<select id="gender">
+<select id="gender" onchange="updateData()">
     <option value="all_genders" selected="selected">All genders</option>
     <option value="M">M</option>
     <option value="F">F</option>
 </select>
-<select id="education_level">
+<select id="education_level" onchange="updateData()">
     <option value="all_education" selected="selected">All Education Levels</option>
     <option value="No Formal quals">No Formal quals</option>
     <option value="Lower Than A Level">Lower Than A Level</option>
@@ -32,12 +59,12 @@
     <option value="HE Qualification">HE Qualification</option>
     <option value="Post Graduate Qualification">Post Graduate Qualification</option>
 </select>
-<select id="age_band">
+<select id="age_band" onchange="updateData()">
     <option value="all_ages" selected="selected">All ages</option>
     <option value="0-35">0-35</option>
     <option value="35-55">35-55</option>
 </select>
-<select id="final_result">
+<select id="final_result" onchange="updateData()">
     <option value="Pass" selected="selected">Pass</option>
     <option value="Fail">Fail</option>
     <option value="Withdrawn">Withdrawn</option>
@@ -75,6 +102,10 @@ function init(width, height) {
     svg = d3.select("#map").append("svg")
         .attr("width", width)
         .attr("height", height);
+
+    tooltip = d3.select("#map").append("div")
+        .attr("class", "tooltip")
+        .style("opacity", 0);
 
     g = svg.append("g");
 
@@ -123,7 +154,7 @@ function updateData(){
       sample+=domain_size[i]
 
     //console.log(sample)
-    var sample_text = "Population: " + sample.toString()
+    var sample_text = "OU Student Population: " + sample.toString()
     var div = document.getElementById('population');
     div.innerHTML = sample_text;
 
@@ -199,8 +230,8 @@ function draw(boundaries) {
     projection
         .scale(1)
         .translate([0,0]);
-
-    var b = path.bounds(topojson.feature(boundaries, boundaries.objects[units]));
+    var geojson = topojson.feature(boundaries, boundaries.objects[units]);
+    var b = path.bounds(geojson);
     var s = .95 / Math.max((b[1][0] - b[0][0]) / width, (b[1][1] - b[0][1]) / height);
     var t = [(width - s * (b[1][0] + b[0][0])) / 2, (height - s * (b[1][1] + b[0][1])) / 2];
 
@@ -208,17 +239,31 @@ function draw(boundaries) {
         .scale(s)
         .translate(t);
 
+
     g.selectAll(".area")
-        .data(topojson.feature(boundaries, boundaries.objects[units]).features)
+        .data(geojson.features)
         .enter().append("path")
         .attr("class", "area")
         .attr("id", function(d) {return d.id})
-        .attr("d", path)
+        .attr("d", path).on("mouseover", function(d) {
+            tooltip.transition()
+            .duration(200)
+            .style("opacity", .9);
+            tooltip.html(d.properties.EER13NM)
+            .style("left", (d3.event.pageX) + "px")
+            .style("top", (d3.event.pageY - 28) + "px");
+          })
+          .on("mouseout", function(d) {
+            tooltip.transition()
+            .duration(500)
+            .style("opacity", 0);
+            });
 
     g.append("path")
         .datum(topojson.mesh(boundaries, boundaries.objects[units], function(a, b){ return a !== b }))
         .attr('d', path)
         .attr('class', 'boundary');
+
 }
 
 function redraw() {
@@ -245,5 +290,8 @@ function load_data(filename, u) {
 
 load_data("https://raw.githubusercontent.com/martinjc/UK-GeoJSON/master/json/electoral/eng/topo_eer.json", "eer")
 
-window.addEventListener('resize', redraw);
+window.addEventListener('resize', updateData);
+window.addEventListener("load", updateData);
 </script>
+</body>
+</html>
